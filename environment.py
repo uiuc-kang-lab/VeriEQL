@@ -96,7 +96,7 @@ class Environment:
             self._script_writer = self.sql_code = None
         self.show_counterexample = show_counterexample
         self.counterexample = None
-        self.counterexample_dict = defaultdict(list) # for Demo frontend
+        self.counterexample_dict = defaultdict(list)  # for Demo frontend
         if semantics == 'bag':
             self.verifier = BagSemanticsVerifier(self)
             LOGGER.debug("Semantics: bag")
@@ -491,22 +491,26 @@ class Environment:
             bound_size=2, symbol='x',
             key_attributes: Sequence = None, NULL_ratio: float = 0.0,
             name: str = None,
+            test_dbs: Dict = None,
     ):
         if self.sql_code is not None:
             self.sql_code['tables'][name] = {}
-            for attr, type in attributes.items():
-                if type is None:
-                    type = 'INTEGER'
-                type = str.upper(type)
-                if type == 'VARCHAR' or type.startswith('ENUM'):
-                    type = 'VARCHAR(20)'
-                elif type == 'DATE':
+            for attr, attr_type in attributes.items():
+                if attr_type is None:
+                    attr_type = 'INTEGER'
+                attr_type = str.upper(attr_type)
+                if attr_type == 'VARCHAR' or attr_type.startswith('ENUM'):
+                    attr_type = 'VARCHAR(20)'
+                elif attr_type == 'DATE':
                     pass
                 else:
-                    type = 'INTEGER'
-                self.sql_code['tables'][name][attr] = type
+                    attr_type = 'INTEGER'
+                self.sql_code['tables'][name][attr] = attr_type
 
         name = str.upper(name or self._get_new_databases_name())
+        if test_dbs is not None:  # the #rows of a table from test_dbs must = bound_size
+            assert len(test_dbs[name]) == bound_size, ValueError(
+                f"The #rows of {name} table in the test databases is inconsistent with the bound {bound_size}")
         key_attributes = key_attributes or set()
         tuples = []
         type_constraints = []
@@ -515,21 +519,41 @@ class Environment:
             fields = []
 
             tuple_sort = self._get_new_tuple_sort()
-            for i, (attr, type) in enumerate(attributes.items(), start=1):
+            for i, (attr, attr_type) in enumerate(attributes.items(), start=0):
                 if attr in saved_attributes:
                     attribute = saved_attributes[attr]
                 else:
                     attribute = self.declare_attribute(name, literal=attr)
                     saved_attributes[attr] = attribute
-                if attr not in key_attributes and random.random() < NULL_ratio:
-                    value = FSymbol(self.NULL)
-                else:
-                    value = FSymbol(f'{symbol}{self.symbolic_count}')
-                    self.symbolic_count += 1
-                value = self._declare_value(str(value))
 
-                if type is not None:
-                    upper_type = str.upper(type)
+                if test_dbs is not None:
+                    # test mode, init dbs with user-provided values.
+                    value = test_dbs[name][idx][i]
+                    if type(value) == int:
+                        value = IntVal(str(value))
+                    elif type(value) == str:
+                        # for a string "2147483648", write String_2147483648__Int = Const('String_2147483648__Int', __Int)
+                        if self._script_writer is not None:
+                            self._script_writer.variable_declaration.append(
+                                CodeSnippet(
+                                    code=f"String_{value}__{self.VarSort} = Const('{value}', __{self.VarSort})",
+                                    docstring=f'define a string constant for `{value}`',
+                                )
+                            )
+                        value = Int(f'String_{value}__{self.VarSort}')
+                    else:
+                        raise Exception("test_dbs only accepts VeriEQL-generated databases (i.e., int and str).")
+                else:
+                    # search mode, init dbs with variables.
+                    if attr not in key_attributes and NULL_ratio > 0. and random.random() < NULL_ratio:
+                        value = FSymbol(self.NULL)
+                    else:
+                        value = FSymbol(f'{symbol}{self.symbolic_count}')
+                        self.symbolic_count += 1
+                    value = self._declare_value(str(value))
+
+                if attr_type is not None:
+                    upper_type = str.upper(attr_type)
                     match upper_type:
                         case 'BOOLEAN' | 'BOOL':
                             type_constraints.append(Or(
