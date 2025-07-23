@@ -1921,6 +1921,10 @@ class Encoder:
                         clause = ctx.attributes[clause.value - 1]
                     else:
                         clause = ctx.select_clause[clause.value - 1]
+                if isinstance(clause, FAttribute) and clause not in ctx.prev_database:
+                    # clause is an alias, e.g.,
+                    # SELECT a/b AS c FROM XX ORDER BY c <=> SELECT a/b AS c FROM XX ORDER BY a/b
+                    clause = clause.EXPR
                 new_clauses.append([clause, clause_sort.get('sort', 'asc') == 'asc'])
             clauses = new_clauses
         return clauses
@@ -2039,7 +2043,8 @@ class Encoder:
                 # --------- ORDER BY ---------#
                 if 'orderby' in query and not kwargs.get("skip_orderby", False):
                     # skip_orderby will skip orderby that is not outermost
-                    # orderby clause can use both attributes from GROUP-BY and SELECT clause
+                    # Q: Why parse orderby first?
+                    # A: The orderby clause can use both attributes from FROM, GROUP-BY, SELECT clauses.
                     # orderby_clause = query.pop('orderby')
                     orderby_clause = query['orderby']
                     if isinstance(ctx.prev_database, FGroupByTable) and orderby_clause == {'value': SQL_NULL}:
