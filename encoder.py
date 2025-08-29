@@ -1921,7 +1921,7 @@ class Encoder:
                         clause = ctx.attributes[clause.value - 1]
                     else:
                         clause = ctx.select_clause[clause.value - 1]
-                if isinstance(clause, FAttribute) and clause not in ctx.prev_database:
+                if isinstance(clause, FAttribute) and clause not in ctx.prev_database.attributes:
                     # clause is an alias, e.g.,
                     # SELECT a/b AS c FROM XX ORDER BY c <=> SELECT a/b AS c FROM XX ORDER BY a/b
                     clause = clause.EXPR
