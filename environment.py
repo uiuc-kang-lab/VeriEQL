@@ -772,9 +772,9 @@ class Environment:
                         out = utils.simplify(out, operator=And)
                         return out
                     case _:
-                        raise NotImplementedError(expr)
+                        raise NotImplementedError(f"Unknown constraint: {expr}")
             else:
-                raise NotImplementedError(expr)
+                raise NotImplementedError(f"Unknown constraint: {expr}")
 
         for constraint in constraints:
             constraint = _f(constraint)

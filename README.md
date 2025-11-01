@@ -51,10 +51,10 @@ python -m __main__
 
 ```shell
 # 10-min timeout
-python -m parallel.run_with_max_timeout -f benchmarks/leetcode/leetcode.jsonlines -t 600 -o benchmarks/leetcode/leetcode.out
+python -m parallel.cli_within_timeout -f benchmarks/leetcode/leetcode.jsonlines -t 600 -o benchmarks/leetcode/leetcode.out
 
 # 10 bound size
-python -m parallel.run_with_max_bound -f benchmarks/leetcode/leetcode.jsonlines -s 10 -o benchmarks/leetcode/leetcode.out
+python -m parallel.cli_within_bound -f benchmarks/leetcode/leetcode.jsonlines -s 10 -o benchmarks/leetcode/leetcode.out
 ```
 
 ## ➕ Supported Features
@@ -79,6 +79,10 @@ python -m parallel.run_with_max_bound -f benchmarks/leetcode/leetcode.jsonlines 
 2) [Literature](./benchmarks/literature): 64 pairs
 
 3) [LeetCode](./benchmarks/leetcode): 23,224 pairs
+
+Updates: 
+- add unsupported constraints for Question `603`, `607` and `1132` of LeetCode benchmarks.
+- update error info for these 3 questions at `experiments/2025_10_31`.
 
 ### Baselines
 

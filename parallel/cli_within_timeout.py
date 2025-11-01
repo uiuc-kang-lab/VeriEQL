@@ -38,11 +38,13 @@ def verify(schema, constraint, query1, query2, bound_size, queue: Queue):
     with Environment(timer=True, generate_code=True) as env:
         for name, db in schema.items():
             env.create_database(db, bound_size=bound_size, name=name)
-        if args.integrity_constraint and constraint is not None:
-            env.add_constraints(constraint)
-        env.save_checkpoints()
-        env.reload_checkpoints()
+
         try:
+            if args.integrity_constraint and constraint is not None:
+                env.add_constraints(constraint)
+            env.save_checkpoints()
+            env.reload_checkpoints()
+
             result = env.analyze(query1, query2)
             if result == False:
                 raise NotEquivalenceError()
@@ -294,7 +296,10 @@ def evaluation(args):
                 else:
                     # print(f'Unknown Error: {[gt, case]}')
                     raise NotImplementedError
-            results['TotalTime(s)'] += time_cost
+            try:
+                results['TotalTime(s)'] += time_cost
+            except:
+                results['TotalTime(s)'] += time_cost
 
         results['#Total'] = len(performances)
         results['SuccessRate(%)'] = (results["#Equiv"] + results["#NotEquiv"]) / results['#Total']
