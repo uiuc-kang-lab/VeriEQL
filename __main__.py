@@ -25,24 +25,17 @@ def main(sql1, sql2, schema, ROW_NUM=2, constraints=None, **kwargs):
 
 if __name__ == '__main__':
     sql1, sql2 = [
-        "SELECT S.CUSTOMERKEY FROM SALES AS S",
-        "SELECT S.CUSTOMERKEY+1 FROM SALES AS S WHERE EXISTS (SELECT SALES.CUSTOMERKEY FROM CUSTOMER JOIN SALES ON CUSTOMER.CUSTOMERKEY = SALES.CUSTOMERKEY WHERE SALES.CUSTOMERKEY != S.CUSTOMERKEY)",
+        "SELECT DISTINCT PAGE_ID AS RECOMMENDED_PAGE FROM (SELECT CASE WHEN USER1_ID=1 THEN USER2_ID WHEN USER2_ID=1 THEN USER1_ID ELSE NULL END AS USER_ID FROM FRIENDSHIP) AS TB1 JOIN LIKES AS TB2 ON TB1.USER_ID=TB2.USER_ID WHERE PAGE_ID NOT IN (SELECT PAGE_ID FROM LIKES WHERE USER_ID=1)",
+        "SELECT DISTINCT PAGE_ID AS RECOMMENDED_PAGE FROM (SELECT B.USER_ID, B.PAGE_ID FROM FRIENDSHIP A LEFT OUTER JOIN LIKES B ON (A.USER2_ID=B.USER_ID OR A.USER1_ID=B.USER_ID) AND (A.USER1_ID=1 OR A.USER2_ID=1) WHERE B.PAGE_ID NOT IN (SELECT DISTINCT PAGE_ID FROM LIKES WHERE USER_ID=1)) T",
     ]
-    # Customer: CustomerKey [PK]
-    # Sales: (CustomerKey [FK], OrderDateKey [FK]) [PK], ShipDate, DueDate
-    # Date: DateKey [PK]
-    schema = {
-        "CUSTOMER": {"CUSTOMERKEY": "INT"},
-        "SALES": {"CUSTOMERKEY": "INT", "ORDERDATEKEY": "INT", "SHIPDATE": "DATE", "DUEDATE": "DATE"},
-        "DATE": {"DATEKEY": "INT"},
-    }
+    # FRIENDSHIP: (USER1_ID, USER2_ID) [PK]
+    # LIKES: (USER_ID, PAGE_ID) [PK]
+    schema = {"FRIENDSHIP": {"USER1_ID": "INT", "USER2_ID": "INT"}, "LIKES": {"USER_ID": "INT", "PAGE_ID": "INT"}, }
     constants = [
         # use `__` to replace `.`, e.g., FRIENDSHIP.USER1_ID => FRIENDSHIP__USER1_ID
-        {"primary": [{"value": "CUSTOMER__CUSTOMERKEY"}]},
-        {"primary": [{"value": "SALES__CUSTOMERKEY"}, {"value": "SALES__ORDERDATEKEY"}]},
-        {"primary": [{"value": "DATE__DATEKEY"}]},
-        {"foreign": [{"value": "SALES__CUSTOMERKEY"}, {"value": "CUSTOMER__CUSTOMERKEY"}]},
-        {"foreign": [{"value": "SALES__ORDERDATEKEY"}, {"value": "DATE__DATEKEY"}]},
+        {"primary": [{"value": "FRIENDSHIP__USER1_ID"}, {"value": "FRIENDSHIP__USER2_ID"}]},
+        {"primary": [{"value": "LIKES__USER_ID"}, {"value": "LIKES__PAGE_ID"}]},
+        {"neq": [{"value": "FRIENDSHIP__USER1_ID"}, {"value": "FRIENDSHIP__USER2_ID"}]},
     ]
     bound_size = 2
     # generate_code: generate SQL code and running outputs if you find a counterexample
