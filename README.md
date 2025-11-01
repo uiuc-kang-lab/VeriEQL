@@ -12,6 +12,17 @@ A SQL pair refuted by VeriEQL.
 
 ![An example checked by VeriEQL.](__figures__/example.png)
 
+## 🐳️ Docker
+
+If you use our Docker image, please skip 🛠️ `Installation`.
+
+```shell
+docker build -t verieql .
+docker run -it --name verieql verieql:latest /bin/zsh
+conda activate VeriEQL
+```
+
+
 ## 🛠️ Installation
 
 ------------------
