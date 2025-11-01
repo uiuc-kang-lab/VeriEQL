@@ -94,6 +94,7 @@ python -m parallel.cli_within_bound -f benchmarks/leetcode/leetcode.jsonlines -s
 Updates: 
 - add unsupported constraints for Question `603`, `607` and `1132` of LeetCode benchmarks.
 - update error info for these 3 questions at `experiments/2025_10_31`.
+- upload `benchmarks/literature/literature-rewrite.jsonlines` which is simplified by rewriting correlated subqueries. VeriEQL was evaluated on this file.
 
 ### Baselines
 
