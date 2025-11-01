@@ -688,11 +688,7 @@ class Encoder:
                 else:
                     raise UnknownDatabaseError(from_clause)
         elif isinstance(from_clause, list):
-            try:
-                table = self.parse_join_clause(from_clause, ctx)
-            except UnknownColumnError as err:
-                print(f"\033[1;31;40mPlease de-correlated the ON clause of JOIN into a WHERE clause.\033[0m")
-                raise err
+            table = self.parse_join_clause(from_clause, ctx)
         elif isinstance(from_clause, dict):  # nested query
             if ctx.with_clause is None:
                 with_databases = None
@@ -858,7 +854,7 @@ class Encoder:
                 # expr = FValueTable(self.scope, expr)
                 try:
                     # correlated_subquery_ctx = self.analyze(copy(expr))
-                    correlated_subquery_ctx = self.analyze(expr, outer_ctx=ctx)
+                    correlated_subquery_ctx = self.analyze(expr)
                     referred_table = correlated_subquery_ctx.prev_database
                 except UnknownColumnError as uc_err:
                     raise CorrelatedQueryError(expr)
@@ -924,14 +920,8 @@ class Encoder:
                     elif operands == {'null': None}:  # NULL is not NULL = False
                         return FDigits(0)
                     else:
-                        if self.is_nested_query(operands, **kwargs):
-                            try:
-                                correlated_subquery_ctx = self.analyze(operands, outer_ctx=ctx)
-                                ctx.is_correlated_subquery = correlated_subquery_ctx.is_correlated_subquery
-                            except UnknownColumnError as uc_err:
-                                raise CorrelatedQueryError(operands[1])
-                            return FExistsPredicate(correlated_subquery_ctx.prev_database)
-                            # raise NotSupportedError('EXISTS')
+                        if self.is_nested_query(operands):
+                            raise NotSupportedError('EXISTS')
                         return FIsNotNullPredicate(self.parse_expression(operands, ctx, **kwargs))
                 case 'missing' | 'isnull':
                     if isinstance(operands, NumericType):
@@ -1084,7 +1074,6 @@ class Encoder:
                             # why fuzzy = true ?
                             # SESSION_ID NOT IN (SELECT SESSION_ID FROM PLAYBACK P JOIN ADS A USING (CUSTOMER_ID) WHERE A.TIMESTAMP BETWEEN START_TIME AND END_TIME GROUP BY CUSTOMER_ID)
                             values = correlated_subquery_ctx.prev_database
-                            ctx.is_correlated_subquery = correlated_subquery_ctx.is_correlated_subquery
                         except UnknownColumnError as uc_err:
                             raise CorrelatedQueryError(operands[1])
                         return FInPredicate(attributes, values)
@@ -1118,7 +1107,6 @@ class Encoder:
                             # why fuzzy = true ?
                             # SESSION_ID NOT IN (SELECT SESSION_ID FROM PLAYBACK P JOIN ADS A USING (CUSTOMER_ID) WHERE A.TIMESTAMP BETWEEN START_TIME AND END_TIME GROUP BY CUSTOMER_ID)
                             values = correlated_subquery_ctx.prev_database
-                            ctx.is_correlated_subquery = correlated_subquery_ctx.is_correlated_subquery
                         except UnknownColumnError as uc_err:
                             raise CorrelatedQueryError(operands[1])
                         return FNotInPredicate(attributes, values)
@@ -1505,7 +1493,7 @@ class Encoder:
                         table = FFilterTable(self.scope, ctx.prev_database, cond)
                     tables.append(table)
             else:
-                tables = [FFilterTable(self.scope, ctx.prev_database, conds, ctx.is_correlated_subquery)]
+                tables = [FFilterTable(self.scope, ctx.prev_database, conds)]
             if len(tables) == 0:
                 table = FEmptyTable(self.scope, attributes=ctx.attributes)
             elif len(tables) == 1:
@@ -1640,12 +1628,8 @@ class Encoder:
                             # correlated subquery
                             attributes = self._find_attributes(selected_attrs, ctx.outer_ctx.attributes,
                                                                shadow_copy=True)
-                            # if len(attributes) != 0:
-                            #     raise CorrelatedQueryError(selected_attrs)
-                            if len(attributes) > 1:
-                                raise UnknownError(f"find {len(attributes)} attributes")
-                            ctx.is_correlated_subquery = True
-                            return attributes
+                            if len(attributes) != 0:
+                                raise CorrelatedQueryError(selected_attrs)
                         else:
                             # still cannot find such attribute
                             if len(attributes) == 0:
@@ -1686,23 +1670,23 @@ class Encoder:
             for sub_table in ctx.prev_database.fathers:
                 condition = [sub_table.attributes, selected_clause]
                 if self._is_fake_projection(sub_table, selected_clause):
-                    table = FFakeProjectionTable(self.scope, sub_table, condition, ctx.is_correlated_subquery)
+                    table = FFakeProjectionTable(self.scope, sub_table, condition)
                 else:
-                    table = FProjectionTable(self.scope, sub_table, condition, ctx.is_correlated_subquery)
+                    table = FProjectionTable(self.scope, sub_table, condition)
                 # table = FProjectionTable(self.scope, sub_table, condition)
                 if DISTINCT:
-                    table = FDistinctTable(self.scope, table, condition, ctx.is_correlated_subquery)
+                    table = FDistinctTable(self.scope, table, condition)
                 tables.append(table)
             table = FUnionAllTable(self.scope, tables)
         else:
             condition = [ctx.attributes, selected_clause]
             if self._is_fake_projection(ctx.prev_database, selected_clause):
-                table = FFakeProjectionTable(self.scope, ctx.prev_database, condition, ctx.is_correlated_subquery)
+                table = FFakeProjectionTable(self.scope, ctx.prev_database, condition)
             else:
-                table = FProjectionTable(self.scope, ctx.prev_database, condition, ctx.is_correlated_subquery)
+                table = FProjectionTable(self.scope, ctx.prev_database, condition)
             # table = FProjectionTable(self.scope, ctx.prev_database, condition)
             if DISTINCT:
-                table = FDistinctTable(self.scope, table, condition, ctx.is_correlated_subquery)
+                table = FDistinctTable(self.scope, table, condition)
                 # ctx.update_select_clause(table)
         ctx.update_select_clause(table)
         LOGGER.debug(table)

@@ -23,12 +23,11 @@ class FFakeProjectionTable(FBaseTable):
                  scope,
                  table: FBaseTable,
                  condition: Sequence[str],
-                 is_correlated_subquery: bool = False,
                  name: str = None,
                  ):
         name = name or scope._get_new_databases_name()
         tuples = _projection(scope, table, condition)
-        super(FFakeProjectionTable, self).__init__(tuples, name, is_correlated_subquery)
+        super(FFakeProjectionTable, self).__init__(tuples, name)
         scope.register_database(name, self)
         self.fathers = [table]
         self.root = table.root or table.name
