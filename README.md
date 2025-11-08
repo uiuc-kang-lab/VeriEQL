@@ -1,6 +1,16 @@
 VeriEQL
 =======
 
+-------------
+
+# 🚚 What's new!
+
+We have moved the latest in-development code to the `dev` branch, as it has not been thoroughly tested. <br>
+For production use, please use a stable version: https://github.com/VeriEQL/VeriEQL/tags.
+
+-------------
+
+
 ## 📝 Introduction
 
 VeriEQL is an equivalence verifier for complex SQL queries with integrity constraints using bounded model checking, and
