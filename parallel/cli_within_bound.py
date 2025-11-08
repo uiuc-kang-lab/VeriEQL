@@ -26,7 +26,7 @@ parser.add_argument('-s', '--bound_size', type=int, default=10)
 parser.add_argument('-t', '--timeout', type=int, default=TIMEOUT)
 parser.add_argument('-m', '--mode', type=str, default='train', choices=['train', 'eval'])
 # multiprocessing might decrease the CPU's performance on each core, but it decreases the total time cost
-parser.add_argument('-c', '--cores', type=int, default=1, choices=list(range(1, 1 + cpu_count())))
+parser.add_argument('-c', '--cores', type=int, default=cpu_count(), choices=list(range(1, 1 + cpu_count())))
 parser.add_argument('-i', '--integrity_constraint', default=1, choices=[0, 1], type=int)
 parser.add_argument('-o', '--out_file', type=str, default=None)
 args = parser.parse_args()

@@ -62,11 +62,22 @@ python -m __main__
 
 ```shell
 # 10-min timeout
-python -m parallel.cli_within_timeout -f benchmarks/leetcode/leetcode.jsonlines -t 600 -o benchmarks/leetcode/leetcode.out
+python -m parallel.cli_within_timeout -f XX.jsonlines -t 600 -o XX.out
 
 # 10 bound size
-python -m parallel.cli_within_bound -f benchmarks/leetcode/leetcode.jsonlines -s 10 -o benchmarks/leetcode/leetcode.out
+python -m parallel.cli_within_bound -f XX.jsonlines -s 10 -o XX.out
 ```
+
+3) Reproduce our experimental results in parallel.
+```shell
+# leetcode
+python -m parallel.cli_within_timeout -f benchmarks/leetcode/leetcode.jsonlines -t 600 -o benchmarks/leetcode/leetcode.out
+# calcite
+python -m parallel.cli_within_timeout -f benchmarks/calcite/calcite2.jsonlines -t 600 -o benchmarks/calcite/calcite2.out
+# literature
+python -m parallel.cli_within_timeout -f benchmarks/literature/literature-rewrite.jsonlines -t 600 -o benchmarks/literature/literature-rewrite.out
+```
+
 
 ## ➕ Supported Features
 
@@ -85,11 +96,11 @@ python -m parallel.cli_within_bound -f benchmarks/leetcode/leetcode.jsonlines -s
 
 ### Benchmarks
 
-1) [Calcite](./benchmarks/calcite2): 397 pairs
+1) [Calcite](./benchmarks/calcite/calcite2.jsonlines): 397 pairs
 
-2) [Literature](./benchmarks/literature): 64 pairs
+2) [Literature](./benchmarks/literature/literature-rewrite.jsonlines): 64 pairs
 
-3) [LeetCode](./benchmarks/leetcode): 23,224 pairs
+3) [LeetCode](./benchmarks/leetcode/leetcode.jsonlines): 23,224 pairs
 
 Updates: 
 - add unsupported constraints for Question `603`, `607` and `1132` of LeetCode benchmarks.
