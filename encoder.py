@@ -1905,10 +1905,6 @@ class Encoder:
                         clause = ctx.attributes[clause.value - 1]
                     else:
                         clause = ctx.select_clause[clause.value - 1]
-                if isinstance(clause, FAttribute) and clause not in ctx.prev_database.attributes:
-                    # clause is an alias, e.g.,
-                    # SELECT a/b AS c FROM XX ORDER BY c <=> SELECT a/b AS c FROM XX ORDER BY a/b
-                    clause = clause.EXPR
                 new_clauses.append([clause, clause_sort.get('sort', 'asc') == 'asc'])
             clauses = new_clauses
         return clauses
@@ -2025,7 +2021,12 @@ class Encoder:
                     else:
                         ctx.prev_database.update_having_clause(having_clause)
                 # --------- ORDER BY ---------#
-                if 'orderby' in query and not kwargs.get("skip_orderby", False):
+                limit_clause = None if query.get('limit', None) is None else query['limit']
+                offset_clause = None if query.get('offset', None) is None else query['offset']
+                fetch_clause = None if query.get('fetch', None) is None else query['fetch']
+                # if this query is followed by limit/offset/fetch, then do ORDER BY
+                skip_orderby = limit_clause is None and offset_clause is None and fetch_clause is None
+                if 'orderby' in query and not (kwargs.get("skip_orderby", False) and skip_orderby):
                     # skip_orderby will skip orderby that is not outermost
                     # Q: Why parse orderby first?
                     # A: The orderby clause can use both attributes from FROM, GROUP-BY, SELECT clauses.
@@ -2050,12 +2051,6 @@ class Encoder:
                         # if (query.get('limit', None) or query.get('offset', None) or query.get('fetch', None)):
                         #     raise NotSupportedError('limit/offset/fetch')
                         # self.parse_orderby_clause(orderby_clause, None, None, None, ctx)
-                        # limit_clause = None if query.get('limit', None) is None else query.pop('limit')
-                        # offset_clause = None if query.get('offset', None) is None else query.pop('offset')
-                        # fetch_clause = None if query.get('fetch', None) is None else query.pop('fetch')
-                        limit_clause = None if query.get('limit', None) is None else query['limit']
-                        offset_clause = None if query.get('offset', None) is None else query['offset']
-                        fetch_clause = None if query.get('fetch', None) is None else query['fetch']
                         self.parse_orderby_clause(orderby_clause, limit_clause, offset_clause, fetch_clause, ctx)
                 # end groupby operation
                 if ctx.groupby_clause is not None:
